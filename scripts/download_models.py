@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
+from shutil import copy2
 
 try:
     from huggingface_hub import hf_hub_download
@@ -46,22 +48,51 @@ HF_DOWNLOADS_SDXL: list[tuple[str, str, str, str]] = [
      "sd_xl_base_1.0.safetensors"),
 ]
 
-LORA_FILENAMES: list[str] = [
-    "epiCRealism_Luxury.safetensors",
-    "minimalist_studio_v2.safetensors",
-    "neon_street_night.safetensors",
-    "film_kodak_portra_v3.safetensors",
+HF_DOWNLOADS_LORAS: list[tuple[str, str, str, str]] = [
+    ("mnemic/dAIversityLoRA15-PhotoSemiReal-SD1.5-LoRA",
+     "dAIversityLoRA15-PhotoSemiReal.safetensors",
+     "loras",
+     "epiCRealism_Luxury.safetensors"),
+
+    ("mnemic/CyberpunkWorld-SD1.5-LoRA",
+     "CyberpunkWorld.safetensors",
+     "loras",
+     "neon_street_night.safetensors"),
+
+    ("shawn323/sd-v1.5-lora-vintage",
+     "pytorch_lora_weights.safetensors",
+     "loras",
+     "film_kodak_portra_v3.safetensors"),
+]
+
+LORA_ALIAS_COPIES: list[tuple[str, str]] = [
+    ("epiCRealism_Luxury.safetensors", "minimalist_studio_v2.safetensors"),
 ]
 
 
-def download_one(repo_id: str, filename: str, target_dir: Path, final_name: str) -> None:
+def get_hf_token() -> str | None:
+    return os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_HUB_TOKEN")
+
+
+def download_one(
+    repo_id: str,
+    filename: str,
+    target_dir: Path,
+    final_name: str,
+    hf_token: str | None,
+) -> None:
     target_dir.mkdir(parents=True, exist_ok=True)
     final_path = target_dir / final_name
     if final_path.exists():
         print(f"  [skip] {final_path.name} already present")
         return
     print(f"  [get]  {repo_id} :: {filename}")
-    local = hf_hub_download(repo_id=repo_id, filename=filename, local_dir=str(target_dir))
+    local = hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        local_dir=str(target_dir),
+        token=hf_token,
+    )
     local_path = Path(local)
 
     if local_path.name != final_name or local_path.parent != target_dir:
@@ -70,20 +101,19 @@ def download_one(repo_id: str, filename: str, target_dir: Path, final_name: str)
     print(f"  [ok]   {final_path}")
 
 
-def print_lora_instructions(loras_dir: Path) -> None:
-    print("\n" + "=" * 72)
-    print("LoRA files — manual download required (CivitAI)")
-    print("=" * 72)
-    print(f"Place the following 4 files into:  {loras_dir}\n")
-    for fn in LORA_FILENAMES:
-        print(f"  - {fn}")
-    print("\nSuggested sources (browse + pick any style LoRA that matches each mood):")
-    print("  Luxury   : https://civitai.com/search/models?sortBy=models_v9&query=luxury")
-    print("  Minimal  : https://civitai.com/search/models?sortBy=models_v9&query=minimalist+studio")
-    print("  Urban    : https://civitai.com/search/models?sortBy=models_v9&query=neon+night")
-    print("  Nostalgic: https://civitai.com/search/models?sortBy=models_v9&query=kodak+portra+film")
-    print("\nIf the LoRA filenames you download differ from the above, edit")
-    print("configs/variants.yaml to match — no other code changes needed.")
+def ensure_lora_aliases(loras_dir: Path) -> None:
+    loras_dir.mkdir(parents=True, exist_ok=True)
+    for source_name, alias_name in LORA_ALIAS_COPIES:
+        source_path = loras_dir / source_name
+        alias_path = loras_dir / alias_name
+        if alias_path.exists():
+            print(f"  [skip] {alias_path.name} already present")
+            continue
+        if not source_path.exists():
+            print(f"  [warn] missing source for alias copy: {source_path}")
+            continue
+        copy2(source_path, alias_path)
+        print(f"  [ok]   {alias_path} (copied from {source_path.name})")
 
 
 def main() -> None:
@@ -92,6 +122,9 @@ def main() -> None:
                    help="Path to your ComfyUI installation (the folder containing main.py).")
     p.add_argument("--skip-sdxl", action="store_true",
                    help="Skip SDXL base download (~6.5 GB). Useful if you only want the SD1.5 stage.")
+    p.add_argument("--skip-loras", action="store_true",
+                   help="Skip auto-downloading style LoRAs from HuggingFace. Use when you plan to "
+                        "provide your own LoRA files manually under ComfyUI/models/loras/.")
     args = p.parse_args()
 
     comfy_root: Path = args.comfy_root.expanduser().resolve()
@@ -99,17 +132,34 @@ def main() -> None:
         sys.exit(f"ComfyUI root not found: {comfy_root}")
 
     models_root = comfy_root / "models"
+    hf_token = get_hf_token()
     print(f"Target: {models_root}\n")
+    if hf_token:
+        print("[auth] HF token found in env (HF_TOKEN or HUGGINGFACE_HUB_TOKEN)")
+    else:
+        print("[auth] No HF token found. Downloads will run unauthenticated (lower rate limits).")
 
     todo = list(HF_DOWNLOADS)
     if not args.skip_sdxl:
         todo += HF_DOWNLOADS_SDXL
+    if not args.skip_loras:
+        todo += HF_DOWNLOADS_LORAS
 
     for repo_id, filename, subdir, final_name in todo:
         print(f"--> {subdir}/{final_name}")
-        download_one(repo_id, filename, models_root / subdir, final_name)
+        download_one(repo_id, filename, models_root / subdir, final_name, hf_token)
 
-    print_lora_instructions(models_root / "loras")
+    if args.skip_loras:
+        print("\n" + "=" * 72)
+        print("LoRAs skipped (--skip-loras). Place your own files into:")
+        print(f"  {models_root / 'loras'}")
+        print("And make sure the filenames match 'lora:' fields in configs/variants.yaml.")
+    else:
+        print("\n" + "=" * 72)
+        print("Creating LoRA aliases...")
+        print("=" * 72)
+        ensure_lora_aliases(models_root / "loras")
+
     print("\nDone.")
 
 

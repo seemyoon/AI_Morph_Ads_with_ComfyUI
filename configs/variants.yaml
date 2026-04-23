@@ -1,13 +1,3 @@
-# AI Morph Ads — variant configuration
-# ------------------------------------------------------------
-# Each entry produces one of the four ad creatives. The driver
-# script (scripts/run_pipeline.py) submits the same ComfyUI
-# workflow four times, substituting these values on each run.
-#
-# `lora` values must match filenames under ComfyUI/models/loras/.
-# If you swap them for different LoRAs from CivitAI, just edit
-# the filename here — no workflow edits required.
-
 # --- Shared (applied to every variant) ------------------------------
 shared:
   # SD1.5 first-stage model
@@ -69,7 +59,7 @@ shared:
 variants:
   - id: "A_luxury"
     label: "Luxury"
-    lora: "epiCRealism_Luxury.safetensors"   # rename to your actual filename
+    lora: "epiCRealism_Luxury.safetensors"
     lora_weight: 0.80
     ipadapter_weight: 0.70
     prompt: >

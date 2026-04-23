@@ -109,7 +109,7 @@ Suggested IP-Adapter weight: **0.5 – 0.7**. For variants where scene atmospher
 
 ### Style switching — LoRA swap
 
-Style is injected via a LoRA swap. Four style LoRAs (sourced from CivitAI) are loaded one at a time, each biasing generation toward a different aesthetic:
+Style is injected via a LoRA swap. By default, four SD1.5-compatible LoRAs are auto-downloaded from HuggingFace and loaded one at a time, each biasing generation toward a different aesthetic:
 
 | Variant | Aesthetic | Typical LoRA weight |
 |---|---|---|
@@ -163,13 +163,14 @@ in the notebook. **Nothing downloads to your computer** unless you explicitly co
 5. Run all cells top-to-bottom. The notebook will:
     - Clone ComfyUI + 3 required custom nodes
     - Install all Python deps
-    - Download model weights via `scripts/download_models.py` (into the Colab VM, not your PC)
-    - Ask you to upload 4 style LoRAs and your product image
+    - Download model weights (including 4 default style LoRAs) via `scripts/download_models.py` (into the Colab VM, not your PC)
+    - Ask you to upload only your product image
     - Start ComfyUI as a background server (`--medvram`, port 8188)
     - Call `scripts/run_pipeline.py` to generate 4 variants
     - Display the results inline
 6. To **keep the outputs**, download the 4 PNGs manually from the Colab file browser, or add a cell to copy them to
    mounted Google Drive.
+7. Optional but recommended: set `HF_TOKEN` in Colab environment variables to avoid HuggingFace throttling.
 
 > Colab free tier: ~4 h T4 per session — enough for multiple full runs. Kaggle: 30 GPU-hrs/week, no idle timeout —
 > better for iterative work.
@@ -236,9 +237,19 @@ This fetches into `../ComfyUI/models/...`:
 | `control_v11f1p_sd15_depth.pth`               | `controlnet/`  |
 | `ip-adapter-plus_sd15.safetensors`            | `ipadapter/`   |
 | `CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors` | `clip_vision/` |
+| `epiCRealism_Luxury.safetensors`              | `loras/`       |
+| `minimalist_studio_v2.safetensors`            | `loras/`       |
+| `neon_street_night.safetensors`               | `loras/`       |
+| `film_kodak_portra_v3.safetensors`            | `loras/`       |
 
-After it finishes the script **prints 4 LoRA filenames** you need to add manually — grab matching style LoRAs from
-CivitAI and place them in `../ComfyUI/models/loras/`, or update the filenames in `configs/variants.yaml`.
+Default LoRA mapping is:
+- `A_luxury` → `mnemic/dAIversityLoRA15-PhotoSemiReal-SD1.5-LoRA`
+- `B_minimal` → alias copy of the same semireal LoRA (`minimalist_studio_v2.safetensors`)
+- `C_urban` → `mnemic/CyberpunkWorld-SD1.5-LoRA`
+- `D_nostalgic` → `shawn323/sd-v1.5-lora-vintage`
+
+If you prefer your own LoRAs, run `download_models.py` with `--skip-loras`, then place custom files into
+`../ComfyUI/models/loras/` and update `configs/variants.yaml`.
 
 **5. Start ComfyUI in a separate terminal** (leave it running)
 
@@ -389,9 +400,11 @@ No workflow JSON edits are needed for any of the above.
 | ControlNet Canny / Depth v1.1 | [lllyasviel/ControlNet-v1-1](https://huggingface.co/lllyasviel/ControlNet-v1-1)                             | OpenRAIL               |
 | IP-Adapter Plus (SD1.5)       | [h94/IP-Adapter](https://huggingface.co/h94/IP-Adapter)                                                     | Apache-2.0             |
 | CLIP-ViT-H-14-laion2B         | bundled with IP-Adapter repo                                                                                | MIT                    |
-| Style LoRAs                   | [CivitAI](https://civitai.com)                                                                              | varies per model       |
+| Luxury + Minimal LoRA         | [mnemic/dAIversityLoRA15-PhotoSemiReal-SD1.5-LoRA](https://huggingface.co/mnemic/dAIversityLoRA15-PhotoSemiReal-SD1.5-LoRA) | see model card |
+| Urban LoRA                    | [mnemic/CyberpunkWorld-SD1.5-LoRA](https://huggingface.co/mnemic/CyberpunkWorld-SD1.5-LoRA) | see model card |
+| Nostalgic LoRA                | [shawn323/sd-v1.5-lora-vintage](https://huggingface.co/shawn323/sd-v1.5-lora-vintage) | see model card |
 
-Each LoRA on CivitAI has its own license — check each one before using outputs commercially.
+If you replace defaults with LoRAs from CivitAI or elsewhere, check each LoRA license before commercial use.
 
 ---
 
