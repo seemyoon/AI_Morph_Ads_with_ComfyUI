@@ -83,10 +83,7 @@
         "4",
         0
       ],
-      "clip_vision": [
-        "5",
-        0
-      ]
+      "attn_mask": null
     },
     "_meta": {
       "title": "IP-Adapter apply (identity lock)"
