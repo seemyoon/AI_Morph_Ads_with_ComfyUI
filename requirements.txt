@@ -1,0 +1,9 @@
+requests
+websocket-client
+
+Pillow
+
+PyYAML
+
+huggingface_hub
+tqdm

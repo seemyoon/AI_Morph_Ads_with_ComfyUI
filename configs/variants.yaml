@@ -1,0 +1,108 @@
+# AI Morph Ads — variant configuration
+# ------------------------------------------------------------
+# Each entry produces one of the four ad creatives. The driver
+# script (scripts/run_pipeline.py) submits the same ComfyUI
+# workflow four times, substituting these values on each run.
+#
+# `lora` values must match filenames under ComfyUI/models/loras/.
+# If you swap them for different LoRAs from CivitAI, just edit
+# the filename here — no workflow edits required.
+
+# --- Shared (applied to every variant) ------------------------------
+shared:
+  # SD1.5 first-stage model
+  sd15_checkpoint: "v1-5-pruned-emaonly.safetensors"
+  sd15_vae:        "vae-ft-mse-840000-ema-pruned.safetensors"
+
+  # SDXL img2img second-stage model (NOT the refiner)
+  sdxl_checkpoint: "sd_xl_base_1.0.safetensors"
+
+  # Dual ControlNet (SD1.5)
+  controlnet_canny: "control_v11p_sd15_canny.pth"
+  controlnet_depth: "control_v11f1p_sd15_depth.pth"
+
+  # IP-Adapter (identity lock)
+  ipadapter_model:  "ip-adapter-plus_sd15.safetensors"
+  clip_vision:      "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+
+  # Generation parameters — shared across the 4 variants
+  sampler:
+    steps: 28
+    cfg:   7.5
+    sampler_name: "dpmpp_2m"
+    scheduler:    "karras"
+    width:  768
+    height: 768
+
+  # SDXL img2img (final pass)
+  refine:
+    denoise: 0.30
+    steps:   20
+    cfg:     6.0
+    width:  1024
+    height: 1024
+
+  # ControlNet strengths
+  controlnet:
+    canny_strength: 0.75
+    depth_strength: 0.50
+
+  # Baseline IP-Adapter strength (per-variant override possible below)
+  ipadapter_weight: 0.6
+
+  # Negative prompt shared across variants
+  negative_prompt: >
+    lowres, blurry, distorted, watermark, signature, text, logo artifacts,
+    extra objects, deformed product, plastic look, oversaturated, cartoon
+
+  # Default text overlay settings
+  overlay:
+    font: null          # set e.g. "Inter-Bold.ttf" after placing a file under assets/fonts/
+    brand_size: 64
+    tagline_size: 32
+    position: "bottom-left"   # one of: bottom-left, bottom-right, top-left, top-right, center
+    padding: 48
+    color: "#FFFFFF"
+    shadow: true
+
+# --- Per-variant overrides ------------------------------------------
+variants:
+  - id: "A_luxury"
+    label: "Luxury"
+    lora: "epiCRealism_Luxury.safetensors"   # rename to your actual filename
+    lora_weight: 0.80
+    ipadapter_weight: 0.70
+    prompt: >
+      cinematic product photograph of {brand} {product}, dramatic low-key lighting,
+      gold rim light, marble and velvet surface, shallow depth of field,
+      expensive editorial aesthetic, high-end perfume ad, photorealistic, 8k
+
+  - id: "B_minimal"
+    label: "Minimal"
+    lora: "minimalist_studio_v2.safetensors"
+    lora_weight: 0.70
+    ipadapter_weight: 0.65
+    prompt: >
+      clean studio product photo of {brand} {product}, soft diffused daylight,
+      pastel seamless backdrop, subtle shadow, scandinavian minimalism,
+      trust-inspiring, commercial catalogue quality, photorealistic
+
+  - id: "C_urban"
+    label: "Urban"
+    lora: "neon_street_night.safetensors"
+    lora_weight: 0.85
+    ipadapter_weight: 0.40
+    prompt: >
+      {brand} {product} on a rainy neon-lit city street at night, cyberpunk billboards,
+      high contrast magenta and cyan, reflective wet pavement, youth energy, motion,
+      cinematic, hyperdetailed
+
+  - id: "D_nostalgic"
+    label: "Nostalgic"
+    lora: "film_kodak_portra_v3.safetensors"
+    lora_weight: 0.75
+    ipadapter_weight: 0.50
+    prompt: >
+      {brand} {product} in warm golden hour sunlight streaming through a vintage window,
+      1970s interior, analog film grain, kodak portra 400, soft bokeh, cozy nostalgic mood,
+      warm color palette
