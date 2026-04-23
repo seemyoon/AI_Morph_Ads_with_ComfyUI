@@ -21,7 +21,6 @@ and per-variant prompt change.
 AI Morph Ads/
 ├── README.md                   # this file — setup + usage
 ├── readme-proposal.md          # original proposal (v1.1, technically revised)
-├── readme-explanation.md       # Russian walkthrough of how each node works
 ├── requirements.txt            # orchestration-side Python deps
 ├── .gitignore
 │
@@ -129,7 +128,6 @@ After KSampler generation at SD1.5 / 768², the pipeline decodes to pixels, unlo
 
 PIL post-processing then overlays brand name + tagline at a fixed ad-safe position (bottom-left by default). All four final images are saved with a prefix per variant (`variantA_luxury.png`, `variantB_minimal.png`, …).
 
-> For a node-by-node walkthrough of every ComfyUI node, see [`readme-explanation.md`](./readme-explanation.md).
 
 ---
 
@@ -272,8 +270,7 @@ individual generations.
 **Important:** `workflows/ai_morph_ads.json` is in **API format** — it cannot be loaded directly via the ComfyUI UI's "
 Load" button. To work visually you have two options:
 
-**Option A — build the workflow visually from scratch** in ComfyUI, referencing `readme-explanation.md` for the node
-structure, then save it as a UI workflow. This gives you a draggable canvas.
+**Option A — build the workflow visually from scratch** in ComfyUI, referencing the node structure described in the Technical Approach section above, then save it as a UI workflow. This gives you a draggable canvas.
 
 **Option B — use the API workflow as-is but inspect it in the UI:**
 
