@@ -32,7 +32,9 @@ class ComfyClient:
             json={"prompt": workflow, "client_id": self.client_id},
             timeout=30,
         )
-        r.raise_for_status()
+        if not r.ok:
+            print(f"ComfyUI /prompt error {r.status_code}:\n{r.text}", file=sys.stderr)
+
         data = r.json()
         if "prompt_id" not in data:
             raise RuntimeError(f"ComfyUI rejected workflow: {data}")
