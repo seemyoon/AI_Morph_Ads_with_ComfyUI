@@ -185,6 +185,15 @@ def main() -> None:
         prompt_id = client.queue_prompt(workflow)
         history = client.wait_for(prompt_id)
 
+        if not history.get("outputs"):
+            print(f"      [DEBUG] history keys: {list(history.keys())}", file=sys.stderr)
+            status = history.get("status", {})
+            if status.get("status_str") == "error":
+                msgs = history.get("status", {}).get("messages", [])
+                for msg in msgs:
+                    print(f"      [ERROR] {msg}", file=sys.stderr)
+            print(f"      [DEBUG] full history (truncated): {json.dumps(history, indent=2)[:3000]}", file=sys.stderr)
+
         outputs = history.get("outputs", {}).get("26", {}).get("images", [])
         if not outputs:
             print(f"      ! variant {v['id']} produced no images", file=sys.stderr)
